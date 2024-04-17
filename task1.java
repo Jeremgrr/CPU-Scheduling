@@ -29,6 +29,7 @@ class dispatcher extends Thread{
     int tID;
     static Semaphore countMutex = new Semaphore(1);
     static Semaphore barrierSem = new Semaphore(0);
+    static Semaphore barrierSem2 = new Semaphore(0);
     static int[] mBurst = new int[tasks];
     static int cBurst;
 
@@ -47,7 +48,7 @@ class dispatcher extends Thread{
     //create getMaxBurst, use mBurst[i] where i is the thread you want to get the maxBurst to use
     public static int[] getMaxBurst(){
         for (int i = 0; i < tasks; i++){
-            int burst = r.nextInt(1,50);  //CHANGE to [1,25] after testing
+            int burst = r.nextInt(1,8);  //CHANGE to [1,50] after testing
             mBurst[i] = burst;
             //System.out.println(mBurst[i]);
         }
@@ -84,14 +85,30 @@ class dispatcher extends Thread{
         //if true, ready queue description has completed, move on to rest of process
         if (bCount == tasks){
             System.out.println("-------------------------------------------");
-            for (int i = 0; i < mBurst.length; i++){
-               // System.out.println(mBurst[0]);
-            }
+            System.out.println("Main thread     | Forking dispatcher 0");
+            System.out.println("Dispatcher 0    | Using CPU 0");
+            System.out.println("Dispatcher 0    | Now releasing dispatchers.");
+            System.out.println();
+            System.out.println("Dispatcher 0    | Running FCFS Algorithm.");
+            System.out.println();
 
+            barrierSem2.release(1);
 
         }
 
+        barrierSem2.acquireUninterruptibly();
+        System.out.println("Dispatcher 0   | Running Process " + tID + "." );
+        System.out.println("Proc. Thread " + tID +" | Using CPU 0; MB=" + RandBurst[tID] + " , CB=0, BT=" + RandBurst[tID] + " , BG:=" + RandBurst[tID]);
 
+
+        int cycles = mBurst[tID];
+
+        for (int i = 0; i < cycles; i++){
+            System.out.println("Proc. Thread " + tID +" | Using CPU 0; On Burst " + i + ".");
+        }
+        System.out.println();
+
+        barrierSem2.release();
 
 
     }
