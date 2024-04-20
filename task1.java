@@ -5,6 +5,7 @@ public class task1 extends Thread {
     //wait on sem
     //for loop using # of burst to print each burst
     public static void main(String[] args) {
+        System.out.println("Scheduler Algorithm Select: FCFS");
         int task = dispatcher.tasks;
         System.out.println("# of threads = " + task);
 
