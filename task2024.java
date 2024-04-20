@@ -15,12 +15,15 @@ public class task2024 extends Thread {
     static Semaphore[] taskStart = new Semaphore[tasks];
     static Semaphore[] taskFinish = new Semaphore[tasks];
 
+    public task2024(int id) {
+        this.tID = id;
+    }
+
 
     public static int[] getMaxBurst(){
         for (int i = 0; i < tasks; i++){
             int burst = r.nextInt(1,8);  //CHANGE to [1,50] after testing
             mBurst[i] = burst;
-            //System.out.println(mBurst[i]);
         }
         return mBurst;
     }
@@ -35,9 +38,12 @@ public class task2024 extends Thread {
             //FIGURE OUT HOW TO USE A SEMAPHORE ARRAY AS A
             
             
+            //taskStart[tID].acquireUninterruptibly();
             taskStart[tID].acquireUninterruptibly();
+            
             //loop once for allotted burst
-            System.out.println("Task Start");
+            System.out.println("TASK STARTED");
+            
             taskFinish[tID].release();
             System.out.println("Task Finished");
 
@@ -55,7 +61,7 @@ public class task2024 extends Thread {
         }
 
         for (int i = 0; i < tasks; i++) {
-            taskFinish[i] = new Semaphore(1);
+            taskFinish[i] = new Semaphore(0);
 
         }
 
@@ -69,9 +75,15 @@ public class task2024 extends Thread {
             t.start();
         }
         
+        for (int i = 0; i < tasks; i ++) {
+            task2024 t = new task2024(i);
+            t.start();
+        }
     }
     
 }
+
+
 
 class dispatcher24 extends Thread {
     int tID;
@@ -80,10 +92,6 @@ class dispatcher24 extends Thread {
 
     public dispatcher24(int id){
         this.tID = id;
-    }
-
-    public int getTaskID() {
-        return tID;
     }
 
     @Override
@@ -113,7 +121,6 @@ class core24 extends Thread {
     static Semaphore coreStart = new Semaphore(0);
     static Semaphore[] taskStart = task2024.taskStart;
     static Semaphore[] taskFinish = task2024.taskFinish;
-    static int[] mBurst = task2024.mBurst;
 
 
     public core24(int id){
@@ -128,9 +135,9 @@ class core24 extends Thread {
             //System.out.println("core: " + tID);
 
             //update assigned Task's allotted burst
-            int taskID = tID;
+            //taskStart[task2024.tID].release();
+            taskStart[task2024.tID].release();
 
-            taskStart[mBurst[tID]].release();
             System.out.println("taskStart release");
             taskFinish[task2024.tID].acquireUninterruptibly();
 
