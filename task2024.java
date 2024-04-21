@@ -18,10 +18,12 @@ public class task2024 extends Thread {
     static Random r = new Random();
     static int tasks = r.nextInt(3,8);  //CHANGE to [1,25] after testing
     static int[] mBurst = new int[tasks];           //mBurst is the Ready Queue
+    static int[] cBurst = new int[tasks];
     static Semaphore[] taskStart = new Semaphore[tasks];
     static Semaphore[] taskFinish = new Semaphore[tasks];
     static int quantum = 3;
     static int allBurst = 0;
+    static int nextTask = -1;
 
     public task2024(int id) {
         this.tID = id;
@@ -36,6 +38,13 @@ public class task2024 extends Thread {
         }
         return mBurst;
     }
+    
+    public static int[] setCurrentBurst(){
+        for (int i = 0; i < tasks; i++){
+            cBurst[i] = 0;          //set each current Burst from null to zero
+        }
+        return cBurst;
+    }
 
     public static int updateBurst(){
         for (int i = 0; i < tasks; i++){
@@ -46,50 +55,104 @@ public class task2024 extends Thread {
         return allBurst;
     }
 
+    public static void printReadyQueue(){
+        System.out.println("\n--------------- Ready Queue ---------------");
+
+        for (int i = 0; i < tasks; i++){
+            System.out.println("ID:" + i + ", Max Burst: " + RandBurst[i] + ", Current Burst: " + "0");
+        }
+        System.out.println("Sum of burst: " + allBurst);
+        System.out.println("-------------------------------------------");
+        System.out.println();
+
+
+    }
+
+    public static synchronized int selectTask() {
+        int taskID = nextTask;
+        nextTask = (nextTask + 1) % tasks;
+        return taskID;
+    }
+    int selectedTask = task2024.selectTask();
+
+    static int[] setCurrent = setCurrentBurst();
     static int[] RandBurst  = getMaxBurst();
 
     @Override
     public void run(){
-        while(mBurst[tID] > 0){
+        while(mBurst[selectedTask] > 0){
 
-            //TO-DO:
-            //FIGURE OUT HOW TO USE A SEMAPHORE ARRAY AS A
+
             
             
             //taskStart[tID].acquireUninterruptibly();
-            taskStart[tID].acquireUninterruptibly();
+            taskStart[selectedTask].acquireUninterruptibly();
             
             //loop once for allotted burst
             System.out.println("TASK STARTED");
-            System.out.println("Currently running task " + tID);
-            for (int i = 0; i < quantum; i++){
-                System.out.println("Burst Cycle " + i);
+            System.out.println("Currently running task " + selectedTask);
+            System.out.println("This task has " + mBurst[selectedTask] + " Bursts remaining");
 
-                //decrement burst value
-                mBurst[tID]--;
-                
+            if (mBurst[selectedTask] < quantum){
+                for (int i = 0; i < mBurst[selectedTask]; i++){
+                    System.out.println("Burst Cycle " + setCurrent[selectedTask]);
+                    setCurrent[selectedTask]++;
+
+                    
+                    //decrement burst value
+                    mBurst[selectedTask]--;
+                    
+
+                }
+            }
+            /* */
+            else{
+                System.out.println("BURST REMAINING IS LESS THAN OR EQUAL TO QUANTUM");
+                for (int i = 0; i < quantum; i++){
+
+                    System.out.println("Burst Cycle " + setCurrent[selectedTask]);
+                    setCurrent[selectedTask]++;
+
+
+                    //decrement burst value
+                    mBurst[selectedTask]--;
+                }
 
             }
+           
             updateBurst();
             
-            taskFinish[tID].release();
+            taskFinish[selectedTask].release();
             System.out.println("Task Finished");
 
             //test to see value of sum of bursts and each individual burst
-            
+            /* 
             System.out.println("all burst is " + allBurst);
             for (int i = 0; i < tasks ; i++){
                 System.out.println("mBurst at " + i + " equals " + mBurst[i]);
             }
-            
+            */
 
         }
 
     }
 
     public static void main(String[] args) {
-        System.out.println("number of tasks it " + tasks );
+        System.out.println("# of threads = " + tasks );
+        for (int i = 0; i < tasks; i++){
+            System.out.println("Main thread     | Creating process thread "  + i);
+        }
         System.out.println();
+
+        printReadyQueue();
+        
+        System.out.println("Main thread     | Forking dispatcher 0");
+        System.out.println("Dispatcher 0    | Using CPU 0");
+        System.out.println("Dispatcher 0    | Now releasing dispatchers.");
+        System.out.println();
+        System.out.println("Dispatcher 0    | Running Round Robin, Time Quantum = " + quantum);
+        System.out.println();
+
         
         for (int i = 0; i < tasks; i++) {
             taskStart[i] = new Semaphore(0);
@@ -121,8 +184,13 @@ public class task2024 extends Thread {
 
 
 
+
+
+
+
+
 class dispatcher24 extends Thread {
-    int tID;
+    static int tID;
     static Semaphore dispatcherStart = new Semaphore(1);
 
 
@@ -132,7 +200,7 @@ class dispatcher24 extends Thread {
 
     @Override
     public void run() {
-        while(true){
+        while(task2024.allBurst > 0){
 
             dispatcherStart.acquireUninterruptibly();
             System.out.println("Dispatcher Here");
@@ -142,7 +210,8 @@ class dispatcher24 extends Thread {
 
 
             //select task from ready Queue
-            int queuedTask = task2024.mBurst[tID];
+
+            int selectedTask = task2024.selectTask();
             //System.out.println("Task at " + tID + " Max Burst is " + queuedTask); 
 
             //assign Task and alloted burst to core
@@ -155,11 +224,15 @@ class dispatcher24 extends Thread {
 }
 
 
+
+
 class core24 extends Thread {
     int tID;
     static Semaphore coreStart = new Semaphore(0);
     static Semaphore[] taskStart = task2024.taskStart;
     static Semaphore[] taskFinish = task2024.taskFinish;
+    int selectedTask = task2024.selectTask();
+
 
 
     public core24(int id){
@@ -168,20 +241,20 @@ class core24 extends Thread {
 
     @Override
     public void run() {
-        while(true){
+        while(task2024.allBurst > 0){
             coreStart.acquireUninterruptibly();
             System.out.println("Core Here");
             //System.out.println("core: " + tID);
 
             //update assigned Task's allotted burst
             //taskStart[task2024.tID].release();
-            taskStart[task2024.tID].release();
 
-            System.out.println("taskStart release");
-            taskFinish[task2024.tID].acquireUninterruptibly();
+            taskStart[selectedTask].release();
+
+            //System.out.println("taskStart release " + dispatcher24.tID);
+            taskFinish[selectedTask].acquireUninterruptibly();
 
             System.out.println("Back to Core");
-            System.out.println("Num task: " + task2024.tasks);
 
 
             System.out.println();
