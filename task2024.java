@@ -6,7 +6,8 @@ import java.util.concurrent.Semaphore;
 /*
  * CURRENT PROBLEMS
  * 
- * DEADLOCK experienced between values 5 - 25 ???
+ * 1) Tasks finish with a single burst not being completed
+ * 2) Deadlock occurs before all bursts finish
  */
 
 public class task2024 extends Thread {
@@ -22,7 +23,7 @@ public class task2024 extends Thread {
     static Semaphore[] taskStart = new Semaphore[tasks];
     static Semaphore[] taskFinish = new Semaphore[tasks];
     static int quantum = 3;
-    static int allBurst = 0;
+    static int allBurst;
     static int nextTask = -1;
 
     public task2024(int id) {
@@ -47,11 +48,12 @@ public class task2024 extends Thread {
     }
 
     public static int updateBurst(){
+        allBurst = 0;   //reset all bursts
+
         for (int i = 0; i < tasks; i++){
-            allBurst = 0;   //reset all bursts
             allBurst = mBurst[i] + allBurst;    //recalculate
         }
-        System.out.println("Updated All Burst: " + allBurst);
+        //System.out.println("Updated All Burst: " + allBurst);
         return allBurst;
     }
 
@@ -80,7 +82,7 @@ public class task2024 extends Thread {
 
     @Override
     public void run(){
-        while(mBurst[selectedTask] > 0){
+        while(allBurst >= 0){
 
 
             
@@ -89,13 +91,26 @@ public class task2024 extends Thread {
             taskStart[selectedTask].acquireUninterruptibly();
             
             //loop once for allotted burst
-            System.out.println("TASK STARTED");
-            System.out.println("Currently running task " + selectedTask);
-            System.out.println("This task has " + mBurst[selectedTask] + " Bursts remaining");
+            //System.out.println("TASK STARTED");
+            //System.out.println("Currently running task " + selectedTask);
+            //System.out.println("This task has " + mBurst[selectedTask] + " Bursts remaining");
 
-            if (mBurst[selectedTask] < quantum){
+            if (mBurst[selectedTask] == 0){
+                //Do nothing
+            }else{
+                System.out.println("Dispatcher 0   | Running Process " + selectedTask + "." );
+                System.out.println("Proc. Thread " + selectedTask +" | Using CPU 0; MB=" + RandBurst[selectedTask] + " , CB=0, BT=" + RandBurst[selectedTask] + " , BG:=" + RandBurst[selectedTask]);
+
+
+            }
+            
+            if (mBurst[selectedTask] == 0){
+                System.out.print("");
+
+            }
+            else if (mBurst[selectedTask] < quantum){
                 for (int i = 0; i < mBurst[selectedTask]; i++){
-                    System.out.println("Burst Cycle " + setCurrent[selectedTask]);
+                    System.out.println("Proc. Thread " + selectedTask +" | Using CPU 0; On Burst " + setCurrent[selectedTask] + ".");
                     setCurrent[selectedTask]++;
 
                     
@@ -105,12 +120,10 @@ public class task2024 extends Thread {
 
                 }
             }
-            /* */
             else{
-                System.out.println("BURST REMAINING IS LESS THAN OR EQUAL TO QUANTUM");
                 for (int i = 0; i < quantum; i++){
 
-                    System.out.println("Burst Cycle " + setCurrent[selectedTask]);
+                    System.out.println("Proc. Thread " + selectedTask +" | Using CPU 0; On Burst " + setCurrent[selectedTask] + ".");
                     setCurrent[selectedTask]++;
 
 
@@ -121,9 +134,15 @@ public class task2024 extends Thread {
             }
            
             updateBurst();
+
+            if (allBurst == 0){
+                System.out.println();
+                System.out.println("Main thread     | Exiting.");
+                break;
+            }
             
             taskFinish[selectedTask].release();
-            System.out.println("Task Finished");
+            //System.out.println("Task Finished");
 
             //test to see value of sum of bursts and each individual burst
             /* 
@@ -203,7 +222,7 @@ class dispatcher24 extends Thread {
         while(task2024.allBurst > 0){
 
             dispatcherStart.acquireUninterruptibly();
-            System.out.println("Dispatcher Here");
+            //System.out.println("Dispatcher Here");
             //System.out.println("dispatcher: " + tID);
             
 
@@ -243,7 +262,7 @@ class core24 extends Thread {
     public void run() {
         while(task2024.allBurst > 0){
             coreStart.acquireUninterruptibly();
-            System.out.println("Core Here");
+            //System.out.println("Core Here");
             //System.out.println("core: " + tID);
 
             //update assigned Task's allotted burst
@@ -254,7 +273,7 @@ class core24 extends Thread {
             //System.out.println("taskStart release " + dispatcher24.tID);
             taskFinish[selectedTask].acquireUninterruptibly();
 
-            System.out.println("Back to Core");
+            //System.out.println("Back to Core");
 
 
             System.out.println();
