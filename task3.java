@@ -164,7 +164,7 @@ class core3 extends Thread {
     static Semaphore coreStart = new Semaphore(0);
     static Semaphore[] taskStart = task3.taskStart;
     static Semaphore[] taskFinish = task3.taskFinish;
-    int selectedTask = task2024.selectTask();
+    int selectedTask = task3.selectTask();
 
 
 
