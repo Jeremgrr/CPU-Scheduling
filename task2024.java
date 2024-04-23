@@ -19,6 +19,7 @@ public class task2024 extends Thread {
     static Random r = new Random();
     static int tasks = r.nextInt(3,8);  //CHANGE to [1,25] after testing
     static int[] mBurst = new int[tasks];           //mBurst is the Ready Queue
+    static int[] maxBurst = new int[tasks];
     static int[] cBurst = new int[tasks];
     static Semaphore[] taskStart = new Semaphore[tasks];
     static Semaphore[] taskFinish = new Semaphore[tasks];
@@ -35,6 +36,7 @@ public class task2024 extends Thread {
         for (int i = 0; i < tasks; i++){
             int burst = r.nextInt(1,8);  //CHANGE to [1,50] after testing
             mBurst[i] = burst;
+            maxBurst[i] = mBurst[i];
             allBurst = mBurst[i] + allBurst;
         }
         return mBurst;
@@ -99,7 +101,7 @@ public class task2024 extends Thread {
                 //Do nothing
             }else{
                 System.out.println("Dispatcher 0   | Running Process " + selectedTask + "." );
-                System.out.println("Proc. Thread " + selectedTask +" | Using CPU 0; MB=" + RandBurst[selectedTask] + " , CB=0, BT=" + RandBurst[selectedTask] + " , BG:=" + RandBurst[selectedTask]);
+                System.out.println("Proc. Thread " + selectedTask +" | Using CPU 0; MB=" + maxBurst[selectedTask] + " , CB=0, BT=" + RandBurst[selectedTask] + " , BG:=" + RandBurst[selectedTask]);
 
 
             }
