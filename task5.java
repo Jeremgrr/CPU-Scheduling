@@ -8,7 +8,7 @@ import java.util.concurrent.Semaphore;
  * 2) Deadlock occurs before all bursts finish
  */
 
-public class task1 extends Thread {
+public class task5 extends Thread {
     static int tID;
  
 
@@ -24,7 +24,7 @@ public class task1 extends Thread {
     static int allBurst;
     static int nextTask = -1;
 
-    public task1( int id) {
+    public task5( int id) {
         this.tID = id;
     }
 
@@ -74,7 +74,7 @@ public class task1 extends Thread {
         nextTask = (nextTask + 1) % tasks;
         return taskID;
     }
-    int selectedTask = task1.selectTask();
+    int selectedTask = task5.selectTask();
 
     static int[] setCurrent = setCurrentBurst();
     static int[] RandBurst  = getMaxBurst();
@@ -101,7 +101,6 @@ public class task1 extends Thread {
 
 
             }
-            
             
             for (int i = 0; i < maxBurst[selectedTask]; i++){
                 System.out.println("Proc. Thread " + selectedTask +" | Using CPU 0; On Burst " + setCurrent[selectedTask] + ".");
@@ -168,22 +167,26 @@ public class task1 extends Thread {
         }
 
         for (int i = 0; i < tasks; i++) {
-            dispatcher1 t = new dispatcher1(i);
+            dispatcher500 t = new dispatcher500(i);
             t.start();
         }
         
         /*Threads for dispatcher and core 1 */
         for (int i = 0; i < tasks; i++) {
-            core1 t = new core1(i);
+            core500 t = new core500(i);
             t.start();
         }
         
         for (int i = 0; i < tasks; i++) {
-            task1 t = new task1(i);
+            task5 t = new task5(i);
             t.start();
         }
 
-     
+        /*Threads for dispatcher and core 2 */
+
+        /*Threads for dispatcher and core 3 */
+
+        /*Threads for dispatcher and core 4 */
 
 
 
@@ -194,25 +197,38 @@ public class task1 extends Thread {
 
 
 
+/*CORE AND DISPATCHER 1 - 00 */
 
 
-
-
-class dispatcher1 extends Thread {
+class dispatcher500 extends Thread {
     static int tID;
-    static Semaphore dispatcherStart = new Semaphore(1);
+    static int nextTask = 0;
+    //static int[] maxBurst = task5.mBurst;
+    //static int[] RandBurst  = getMaxBurst();
 
 
-    public dispatcher1(int id){
+    static Semaphore dispatcherStart00 = new Semaphore(1);
+
+
+    public dispatcher500(int id){
         this.tID = id;
     }
+    /* */
+    public static synchronized int selectTask() {
+        int taskID = nextTask;
+        nextTask = (nextTask + 1) % task1.tasks;
+        return taskID;
+    }
+    int selectedTask = dispatcher500.selectTask();
+
 
     @Override
     public void run() {
-        while(task1.allBurst > 0){
+        while(task5.allBurst > 0){
 
-            dispatcherStart.acquireUninterruptibly();
-            //System.out.println("Dispatcher Here");
+            dispatcherStart00.acquireUninterruptibly();
+            System.out.println("Dispatcher 0   | Running Process " + selectedTask + ". HAVING PROBLEMS HERE"  );
+            //System.out.println("Proc. Thread " + selectedTask +" );
             //System.out.println("dispatcher: " + tID);
             
 
@@ -220,12 +236,12 @@ class dispatcher1 extends Thread {
 
             //select task from ready Queue
 
-            int selectedTask = task1.selectTask();
+            int selectedTask = task5.selectTask();
             //System.out.println("Task at " + tID + " Max Burst is " + queuedTask); 
 
             //assign Task and alloted burst to core
 
-            core1.coreStart.release();
+            core500.coreStart00.release();
         }
         
 
@@ -235,23 +251,23 @@ class dispatcher1 extends Thread {
 
 
 
-class core1 extends Thread {
+class core500 extends Thread {
     int tID;
-    static Semaphore coreStart = new Semaphore(0);
-    static Semaphore[] taskStart = task1.taskStart;
-    static Semaphore[] taskFinish = task1.taskFinish;
-    int selectedTask = task1.selectTask();
+    static Semaphore coreStart00 = new Semaphore(0);
+    static Semaphore[] taskStart = task5.taskStart;
+    static Semaphore[] taskFinish = task5.taskFinish;
+    int selectedTask = task5.selectTask();
 
 
 
-    public core1(int id){
+    public core500(int id){
         this.tID = id;
     }
 
     @Override
     public void run() {
-        while(task1.allBurst > 0){
-            coreStart.acquireUninterruptibly();
+        while(task5.allBurst > 0){
+            coreStart00.acquireUninterruptibly();
             //System.out.println("Core Here");
             //System.out.println("core: " + tID);
 
@@ -267,7 +283,7 @@ class core1 extends Thread {
 
             System.out.println();
 
-            dispatcher1.dispatcherStart.release();
+            dispatcher500.dispatcherStart00.release();
         }
     
         
@@ -275,4 +291,85 @@ class core1 extends Thread {
 }
 
 
+
+/*CORE AND DISPATCHER 2 - 01 */
+
+
+
+
+class dispatcher501 extends Thread {
+    static int tID;
+    static Semaphore dispatcherStart01 = new Semaphore(1);
+
+
+    public dispatcher501(int id){
+        this.tID = id;
+    }
+
+    @Override
+    public void run() {
+        while(task5.allBurst > 0){
+
+            dispatcherStart01.acquireUninterruptibly();
+            //System.out.println("Dispatcher Here");
+            //System.out.println("dispatcher: " + tID);
+            
+
+
+
+            //select task from ready Queue
+
+            int selectedTask = task5.selectTask();
+            //System.out.println("Task at " + tID + " Max Burst is " + queuedTask); 
+
+            //assign Task and alloted burst to core
+
+            core501.coreStart01.release();
+        }
+        
+
+    }
+}
+
+
+
+
+class core501 extends Thread {
+    int tID;
+    static Semaphore coreStart01 = new Semaphore(0);
+    static Semaphore[] taskStart = task5.taskStart;
+    static Semaphore[] taskFinish = task5.taskFinish;
+    int selectedTask = task5.selectTask();
+
+
+
+    public core501(int id){
+        this.tID = id;
+    }
+
+    @Override
+    public void run() {
+        while(task5.allBurst > 0){
+            coreStart01.acquireUninterruptibly();
+            //System.out.println("Core Here");
+            //System.out.println("core: " + tID);
+
+      
+
+            taskStart[selectedTask].release();
+
+            //System.out.println("taskStart release " + dispatcher24.tID);
+            taskFinish[selectedTask].acquireUninterruptibly();
+
+            //System.out.println("Back to Core");
+
+
+            System.out.println();
+
+            dispatcher501.dispatcherStart01.release();
+        }
+    
+        
+    }
+}
 
