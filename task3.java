@@ -1,223 +1,256 @@
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.Semaphore;
-import java.util.Arrays;
+
+/*
+ * CURRENT PROBLEMS
+ * 
+ * 1) Tasks finish with a single burst not being completed
+ * 2) Deadlock occurs before all bursts finish
+ */
 
 public class task3 extends Thread {
     static int tID;
+ 
+
+    //static List<Integer> readyQ = new ArrayList<>();   MAYBE USE ARRAYLIST
+
     static Random r = new Random();
-    static int tasks = r.nextInt(3, 8);
-    static int[] mBurst = new int[tasks];
+    static int tasks = r.nextInt(3,8);  //CHANGE to [1,25] after testing
+    static int[] mBurst = new int[tasks];           //mBurst is the Ready Queue
+    static int[] maxBurst = new int[tasks];
     static int[] cBurst = new int[tasks];
-    static int[] sBurst = mBurst;
     static Semaphore[] taskStart = new Semaphore[tasks];
     static Semaphore[] taskFinish = new Semaphore[tasks];
-   
     static int allBurst;
-    static int nextTask = -1;
-    static int[] maxBurst = new int[tasks];
-    
+    int shortestBurstTime = mBurst[0];
 
-    public task3(int id) {
+    //ArrayList<Integer> sBurst = new ArrayList<>();
+    static int nextTask = -1;
+
+    public task3( int id) {
         this.tID = id;
     }
 
-    public static int[] getMaxBurst() {
-        for (int i = 0; i < tasks; i++) {
-            int burst = r.nextInt(1, 8);
+
+    public static int[] getMaxBurst(){
+        for (int i = 0; i < tasks; i++){
+            int burst = r.nextInt(1,8);  //CHANGE to [1,50] after testing
             mBurst[i] = burst;
+            maxBurst[i] = mBurst[i];
             allBurst = mBurst[i] + allBurst;
         }
         return mBurst;
     }
-
-    public static int[] setCurrentBurst() {
-        for (int i = 0; i < tasks; i++) {
-            cBurst[i] = 0;
+    
+    public static int[] setCurrentBurst(){
+        for (int i = 0; i < tasks; i++){
+            cBurst[i] = 0;          //set each current Burst from null to zero
         }
         return cBurst;
     }
 
-    public static synchronized int updateBurst() {
-        allBurst = 0;
-        for (int i = 0; i < tasks; i++) {
-            allBurst = mBurst[i] + allBurst;
+    public static int updateBurst(){
+        allBurst = 0;   //reset all bursts
+
+        for (int i = 0; i < tasks; i++){
+            allBurst = mBurst[i] + allBurst;    //recalculate
         }
+        //System.out.println("Updated All Burst: " + allBurst);
         return allBurst;
     }
 
-    public static synchronized void printReadyQueue() {
+    public static void printReadyQueue(){
         System.out.println("\n--------------- Ready Queue ---------------");
-        for (int i = 0; i < tasks; i++) {
-            System.out.println("ID:" + i + ", Max Burst: " + mBurst[i] + ", Current Burst: " + "0");
+
+        for (int i = 0; i < tasks; i++){
+            System.out.println("ID:" + i + ", Max Burst: " + RandBurst[i] + ", Current Burst: " + "0");
         }
-    
         System.out.println("Sum of burst: " + allBurst);
         System.out.println("-------------------------------------------");
         System.out.println();
-    }
-// mBurst = { 12, 13 ,10}
-    
-    public static void bubbleSort (int[] array){
-        for (int i = 0; i < tasks -1; i++){
-            for (int j = 0; j < tasks - i - 1; j++){
-                if (array[j] > array[j+1]){
 
-                    int temp = array[j];
-                    array[j] = array[j + 1];
-                    array[j + 1] = temp;
-
-                }
-            }
-        }
-        System.out.print("[");
-        for (int i = 0; i < tasks; i++){
-            System.out.print(array[i] + ",");
-        }
-        System.out.print("]");
 
     }
-    
-    public static int[] shortestToLongest(){
-        int shortestBurstTime = mBurst[0];
 
-        for (int i = 0; i < tasks; i++) {
-            if (shortestBurstTime > mBurst[i]) {
-                shortestBurstTime = mBurst[i];
+    
+
+    public static int selectTask() {
+        int shortestIndex = -1;
+        for ( int i = 0; i < tasks; i++ ){
+            if (mBurst[i] != 0 && (shortestIndex == -1 || mBurst[i] < mBurst[shortestIndex])){
+                shortestIndex = i;
             }
         }
+
+        if (shortestIndex == -1){
+            throw new IllegalArgumentException("No non-zero integer found", null);
+        }
+        //System.out.println("returning " + shortestIndex);
         
-        return mBurst;
+        return shortestIndex;
     }
-    public static synchronized int selectTask() {
-        int shortestBurstTime = mBurst[0];
+    int selectedTask = task3.selectTask();
 
-        for (int i = 0; i < tasks; i++) {
-            if (shortestBurstTime > mBurst[i]) {
-                shortestBurstTime = mBurst[i];
-                nextTask = i;
-                
-                return nextTask;
-            }else {
-            }
-        }
-        return nextTask;
-    }
-
-    static int selectedTask = task3.selectTask();
     static int[] setCurrent = setCurrentBurst();
-    static int[] RandBurst = getMaxBurst();
+    static int[] RandBurst  = getMaxBurst();
 
     @Override
-    public void run() {
-        boolean anyBurstRemaining = true;
-        while (anyBurstRemaining) {
-            int selectedTask = task3.selectTask();
+    public void run(){
+        while(allBurst > 0){
+
+ 
             taskStart[selectedTask].acquireUninterruptibly();
-            if (mBurst[selectedTask] == 0) {
-                // Do nothing
-            } else {
-                System.out.println("Dispatcher 0   | Running Process " + selectedTask + ".");
-                System.out.println("Proc. Thread " + selectedTask + " | Using CPU 0; MB=" + RandBurst[selectedTask] + " , CB=0, BT=" + RandBurst[selectedTask] + " , BG:=" + RandBurst[selectedTask]);
-            }
-            if (mBurst[selectedTask] == 0) {
-                System.out.print("");
-            } else if (mBurst[selectedTask] < quantum) {
-                for (int i = 0; i < mBurst[selectedTask]; i++) {
-                    System.out.println("Proc. Thread " + selectedTask + " | Using CPU 0; On Burst " + setCurrent[selectedTask] + ".");
-                    setCurrent[selectedTask]++;
-                    mBurst[selectedTask]--;
-                }
-            } else {
-                for (int i = 0; i < quantum; i++) {
-                    System.out.println("Proc. Thread " + selectedTask + " | Using CPU 0; On Burst " + setCurrent[selectedTask] + ".");
-                    setCurrent[selectedTask]++;
-                    mBurst[selectedTask]--;
-                }
+            
+            //loop once for allotted burst
+            //System.out.println("TASK STARTED");
+            //System.out.println("Currently running task " + selectedTask);
+            //System.out.println("This task has " + mBurst[selectedTask] + " Bursts remaining");
+            
+            //Adds Dispatcher 'Running Process Tag' before running bursts
+            if (mBurst[selectedTask] == 0){
+                //Do nothing
+                break;
+            }else{
+                System.out.println("Dispatcher 0   | Running Process " + selectedTask + "." );
+                //this is why we get the case of 1 print at 2??
+                System.out.println("Proc. Thread " + selectedTask +" | Using CPU 0; MB=" + maxBurst[selectedTask] + " , CB=0, BT=" + RandBurst[selectedTask] + " , BG:=" + RandBurst[selectedTask]);
+
+
             }
             
-            if (!anyBurstRemaining) {
+            
+            for (int i = 0; i < maxBurst[selectedTask]; i++){
+                System.out.println("Proc. Thread " + selectedTask +" | Using CPU 0; On Burst " + setCurrent[selectedTask] + ".");
+                setCurrent[selectedTask]++;
+
+                
+                //decrement burst value
+                mBurst[selectedTask]--;
+
+                allBurst--;
+                
+
+            }
+        
+           
+            //updateBurst();
+
+            if (allBurst == 0){
                 System.out.println();
                 System.out.println("Main thread     | Exiting.");
                 break;
             }
+            
+            taskFinish[selectedTask].release();
+            //System.out.println("Task Finished");
+
+            //test to see value of sum of bursts and each individual burst
+            /* 
+            System.out.println("all burst is " + allBurst);
+            for (int i = 0; i < tasks ; i++){
+                System.out.println("mBurst at " + i + " equals " + mBurst[i]);
+            }
+            */
+
         }
+
     }
-    
-    
-    
-    
 
     public static void main(String[] args) {
-        System.out.println("# of threads = " + tasks);
-        for (int i = 0; i < tasks; i++) {
-            System.out.println("Main thread     | Creating process thread " + i);
+        System.out.println("# of threads = " + tasks );
+        for (int i = 0; i < tasks; i++){
+            System.out.println("Main thread     | Creating process thread "  + i);
         }
         System.out.println();
-        //bubbleSort(sBurst);
+
         printReadyQueue();
+        
         System.out.println("Main thread     | Forking dispatcher 0");
         System.out.println("Dispatcher 0    | Using CPU 0");
         System.out.println("Dispatcher 0    | Now releasing dispatchers.");
         System.out.println();
-        System.out.println("Dispatcher 0    | Non-Preemptive Shortest Job First, Time Quantum = " + quantum);
+        System.out.println("Dispatcher 0    | Running Non-Premptive , Shortest Job Scheduler ");
         System.out.println();
-    
+
+        
         for (int i = 0; i < tasks; i++) {
             taskStart[i] = new Semaphore(0);
+
         }
-    
+
         for (int i = 0; i < tasks; i++) {
             taskFinish[i] = new Semaphore(0);
+
         }
-    
+
         for (int i = 0; i < tasks; i++) {
             dispatcher3 t = new dispatcher3(i);
             t.start();
         }
-    
+        
+        /*Threads for dispatcher and core 1 */
         for (int i = 0; i < tasks; i++) {
             core3 t = new core3(i);
             t.start();
         }
-    
-        task3[] taskThreads = new task3[tasks]; // Create an array to hold task threads
-    
+        
         for (int i = 0; i < tasks; i++) {
-            taskThreads[i] = new task3(i); // Create task threads
-            taskThreads[i].start(); // Start task threads
+            task3 t = new task3(i);
+            t.start();
         }
-    
-        // Wait for all task threads to finish
-        for (int i = 0; i < tasks; i++) {
-            try {
-                taskThreads[i].join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    
-        System.out.println("Main thread     | All task threads completed. Exiting.");
+
+     
+
+
+
     }
     
 }
+
+
+
+
+
+
+
 
 class dispatcher3 extends Thread {
     static int tID;
     static Semaphore dispatcherStart = new Semaphore(1);
 
-    public dispatcher3(int id) {
+
+    public dispatcher3(int id){
         this.tID = id;
     }
 
     @Override
     public void run() {
-        while (task3.allBurst > 0) {
+        while(task3.allBurst > 0){
+
             dispatcherStart.acquireUninterruptibly();
+            //System.out.println("Dispatcher Here");
+            //System.out.println("dispatcher: " + tID);
+            
+
+
+
+            //select task from ready Queue
+
             int selectedTask = task3.selectTask();
+            //System.out.println("Task at " + tID + " Max Burst is " + queuedTask); 
+
+            //assign Task and alloted burst to core
+
             core3.coreStart.release();
         }
+        
+
     }
 }
+
+
+
 
 class core3 extends Thread {
     int tID;
@@ -239,8 +272,10 @@ class core3 extends Thread {
             //System.out.println("Core Here");
             //System.out.println("core: " + tID);
 
-            //update assigned Task's allotted burst
-            //taskStart[task2024.tID].release();
+            /*Helps handle case where selectedTask doesnt iterate from 0 and -1 */
+          
+
+      
 
             taskStart[selectedTask].release();
 
@@ -254,7 +289,10 @@ class core3 extends Thread {
 
             dispatcher3.dispatcherStart.release();
         }
-
-
+    
+        
     }
 }
+
+
+
