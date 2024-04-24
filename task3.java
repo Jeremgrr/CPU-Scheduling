@@ -170,7 +170,7 @@ public class task3 extends Thread {
         System.out.println("Dispatcher 0    | Using CPU 0");
         System.out.println("Dispatcher 0    | Now releasing dispatchers.");
         System.out.println();
-        System.out.println("Dispatcher 0    | Running Non-Premptive , Shortest Job Scheduler ");
+        System.out.println("Dispatcher 0    | Running Non-Premptive , Shortest Job First (NSJF)");
         System.out.println();
 
         
